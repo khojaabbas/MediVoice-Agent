@@ -79,12 +79,11 @@ AI Voice:
 
 ## Patient Portal
 
-(Add screenshot here)
+![alt text](image.png)
 
 ## Admin Dashboard
-
-(Add screenshot here)
-
+![alt text](image-1.png)
+![alt text](image-2.png)
 ---
 
 # ⚙️ Installation
