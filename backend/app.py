@@ -1,8 +1,3 @@
-import os
-import sys
-
-sys.path.append(os.path.dirname(__file__))
-
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,6 +6,7 @@ from database import SessionLocal, Appointment, CallLog
 
 app = FastAPI()
 
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -19,6 +15,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# =========================
+# REQUEST MODELS
+# =========================
 
 class AppointmentRequest(BaseModel):
     patient_name: str
@@ -39,13 +39,24 @@ class CallLogRequest(BaseModel):
     status: str
 
 
+# =========================
+# HOME ROUTES
+# =========================
+
 @app.get("/")
+@app.get("/api/")
 def home():
     return {"message": "MediVoice Backend Running"}
 
 
+# =========================
+# BOOK APPOINTMENT
+# =========================
+
 @app.post("/book-appointment")
+@app.post("/api/book-appointment")
 def book_appointment(data: AppointmentRequest):
+
     db = SessionLocal()
 
     try:
@@ -60,7 +71,11 @@ def book_appointment(data: AppointmentRequest):
             return {
                 "success": False,
                 "message": "Slot already booked",
-                "suggested_slots": ["11:00 AM", "11:30 AM", "12:00 PM"],
+                "suggested_slots": [
+                    "11:00 AM",
+                    "11:30 AM",
+                    "12:00 PM",
+                ],
             }
 
         new_appointment = Appointment(
@@ -88,23 +103,54 @@ def book_appointment(data: AppointmentRequest):
             },
         }
 
+    except Exception as e:
+        return {
+            "success": False,
+            "message": str(e),
+        }
+
     finally:
         db.close()
 
 
+# =========================
+# GET APPOINTMENTS
+# =========================
+
 @app.get("/appointments")
+@app.get("/api/appointments")
 def get_appointments():
+
     db = SessionLocal()
 
     try:
-        return db.query(Appointment).order_by(Appointment.id.desc()).all()
+        appointments = db.query(Appointment).order_by(
+            Appointment.id.desc()
+        ).all()
+
+        return appointments
+
+    except Exception as e:
+        return {
+            "success": False,
+            "message": str(e),
+        }
 
     finally:
         db.close()
 
 
+# =========================
+# UPDATE STATUS
+# =========================
+
 @app.put("/appointments/{appointment_id}/status")
-def update_appointment_status(appointment_id: int, data: StatusUpdateRequest):
+@app.put("/api/appointments/{appointment_id}/status")
+def update_appointment_status(
+    appointment_id: int,
+    data: StatusUpdateRequest
+):
+
     db = SessionLocal()
 
     try:
@@ -134,6 +180,7 @@ def update_appointment_status(appointment_id: int, data: StatusUpdateRequest):
             }
 
         appointment.status = data.status
+
         db.commit()
         db.refresh(appointment)
 
@@ -150,12 +197,24 @@ def update_appointment_status(appointment_id: int, data: StatusUpdateRequest):
             },
         }
 
+    except Exception as e:
+        return {
+            "success": False,
+            "message": str(e),
+        }
+
     finally:
         db.close()
 
 
+# =========================
+# DELETE APPOINTMENT
+# =========================
+
 @app.delete("/appointments/{appointment_id}")
+@app.delete("/api/appointments/{appointment_id}")
 def delete_appointment(appointment_id: int):
+
     db = SessionLocal()
 
     try:
@@ -177,12 +236,24 @@ def delete_appointment(appointment_id: int):
             "message": "Appointment deleted successfully",
         }
 
+    except Exception as e:
+        return {
+            "success": False,
+            "message": str(e),
+        }
+
     finally:
         db.close()
 
 
+# =========================
+# SAVE CALL LOG
+# =========================
+
 @app.post("/save-call-log")
+@app.post("/api/save-call-log")
 def save_call_log(data: CallLogRequest):
+
     db = SessionLocal()
 
     try:
@@ -202,16 +273,38 @@ def save_call_log(data: CallLogRequest):
             "message": "Call log saved",
         }
 
+    except Exception as e:
+        return {
+            "success": False,
+            "message": str(e),
+        }
+
     finally:
         db.close()
 
 
+# =========================
+# GET CALL LOGS
+# =========================
+
 @app.get("/call-logs")
+@app.get("/api/call-logs")
 def get_call_logs():
+
     db = SessionLocal()
 
     try:
-        return db.query(CallLog).order_by(CallLog.id.desc()).all()
+        logs = db.query(CallLog).order_by(
+            CallLog.id.desc()
+        ).all()
+
+        return logs
+
+    except Exception as e:
+        return {
+            "success": False,
+            "message": str(e),
+        }
 
     finally:
         db.close()
