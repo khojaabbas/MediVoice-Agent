@@ -18,8 +18,8 @@ import {
 import "./App.css";
 
 const API_URL = "http://127.0.0.1:8000/api";
-// const API_URL =
-//   import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
 
 const VAPI_PUBLIC_KEY = import.meta.env.VITE_VAPI_PUBLIC_KEY;
 const VAPI_ASSISTANT_ID = import.meta.env.VITE_VAPI_ASSISTANT_ID;
