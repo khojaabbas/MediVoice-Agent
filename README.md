@@ -1,78 +1,64 @@
 # 🏥 MediVoice AI Healthcare Receptionist
 
-An AI-powered healthcare voice receptionist system that allows patients to book appointments naturally through real-time voice conversations.
+MediVoice is an AI-powered healthcare voice receptionist system that allows patients to book appointments naturally through real-time voice conversations.
 
-Built using:
+The assistant collects patient details, books appointments through a FastAPI backend, stores data in Supabase, and shows live updates in the admin dashboard.
 
-- React + Vite
+---
+
+## 🚀 Tech Stack
+
+### Frontend
+- React
+- Vite
+- Axios
+- Lucide React
+- Modern responsive UI
+
+### Backend
 - FastAPI
-- SQLite
+- Python
+- Supabase Client
+
+### Database
+- Supabase PostgreSQL
+
+### AI Voice
 - Vapi AI Voice Assistant
-- Tailwind-style modern UI
-- Real-time appointment dashboard
 
 ---
 
-# ✨ Features
+## ✨ Features
 
-## 🎤 AI Voice Appointment Booking
+### 🎤 AI Voice Appointment Booking
 Patients can speak naturally with the AI receptionist to:
-
 - Book appointments
-- Select doctor types
-- Choose appointment dates/times
-- Confirm bookings
+- Select doctor type
+- Choose appointment date
+- Choose appointment time
+- Confirm booking
 
----
-
-## 📊 Admin Dashboard
-
-Real-time dashboard for monitoring:
-
+### 📊 Admin Dashboard
+The admin dashboard shows:
+- All appointments
 - Active appointments
-- Patient records
-- Appointment statuses
-- Booking updates
+- Completed appointments
+- Cancelled / No Show appointments
+- Live appointment data from Supabase
 
----
-
-## 🔄 Appointment Status Management
-
-Admin can update:
-
+### 🔄 Appointment Status Management
+Admin can update appointment status:
 - Checked In
+- In Consultation
 - Completed
 - Cancelled
 - No Show
 
----
+### 🗑️ Delete Appointment
+Admin can delete appointments directly from the dashboard.
 
-## 🧠 AI Receptionist
-
-Powered by:
-
-- Vapi AI Voice Assistant
-- Real-time voice conversation
-- Natural language interactions
-
----
-
-# 🏗️ System Architecture
-
-Frontend:
-- React
-- Vite
-- Axios
-- Lucide Icons
-
-Backend:
-- FastAPI
-- SQLAlchemy
-- SQLite
-
-AI Voice:
-- Vapi AI SDK
-
+### ☁️ Cloud Database
+Appointments and call logs are stored permanently in Supabase PostgreSQL.
 ---
 
 # 📸 Screenshots
@@ -86,9 +72,19 @@ AI Voice:
 ![alt text](image-2.png)
 ---
 
-# ⚙️ Installation
 
-# 1️⃣ Clone Repository
 
-```bash
-git clone https://github.com/YOUR_USERNAME/MediVoice-Agent.git
+---
+
+## 🏗️ System Architecture
+
+```text
+Patient Voice Call
+        ↓
+Vapi AI Assistant
+        ↓
+FastAPI Backend
+        ↓
+Supabase PostgreSQL
+        ↓
+React Admin Dashboard
