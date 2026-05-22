@@ -2,12 +2,16 @@ import os
 import sys
 import traceback
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend")))
+sys.path.append(
+    os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "backend")
+    )
+)
 
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from database import SessionLocal, Appointment, CallLog
+from database import supabase
 
 app = FastAPI()
 
@@ -19,6 +23,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# =========================
+# MODELS
+# =========================
 
 class AppointmentRequest(BaseModel):
     patient_name: str
@@ -39,39 +47,46 @@ class CallLogRequest(BaseModel):
     status: str = "Completed"
 
 
-@app.get("/")
-def home():
-    return {"message": "MediVoice Backend Running"}
+# =========================
+# HOME
+# =========================
 
+@app.get("/")
+@app.get("/api")
+def home():
+    return {
+        "message": "MediVoice Supabase Backend Running"
+    }
+
+
+# =========================
+# BOOK APPOINTMENT
+# =========================
 
 @app.post("/book-appointment")
 @app.post("/api/book-appointment")
 def book_appointment(data: AppointmentRequest):
-    db = SessionLocal()
-    try:
-        appointment = Appointment(
-            patient_name=data.patient_name,
-            doctor_type=data.doctor_type,
-            appointment_date=data.appointment_date,
-            appointment_time=data.appointment_time,
-            status="Confirmed",
-        )
 
-        db.add(appointment)
-        db.commit()
-        db.refresh(appointment)
+    try:
+        appointment_data = {
+            "patient_name": data.patient_name,
+            "doctor_type": data.doctor_type,
+            "appointment_date": data.appointment_date,
+            "appointment_time": data.appointment_time,
+            "status": "Confirmed",
+        }
+
+        result = (
+            supabase
+            .table("appointments")
+            .insert(appointment_data)
+            .execute()
+        )
 
         return {
             "success": True,
             "message": "Appointment booked successfully",
-            "appointment": {
-                "id": appointment.id,
-                "patient_name": appointment.patient_name,
-                "doctor_type": appointment.doctor_type,
-                "appointment_date": appointment.appointment_date,
-                "appointment_time": appointment.appointment_time,
-                "status": appointment.status,
-            },
+            "appointment": result.data[0]
         }
 
     except Exception as e:
@@ -81,51 +96,66 @@ def book_appointment(data: AppointmentRequest):
             "traceback": traceback.format_exc(),
         }
 
-    finally:
-        db.close()
 
+# =========================
+# GET APPOINTMENTS
+# =========================
 
 @app.get("/appointments")
 @app.get("/api/appointments")
 def get_appointments():
-    db = SessionLocal()
+
     try:
-        return db.query(Appointment).order_by(Appointment.id.desc()).all()
+        result = (
+            supabase
+            .table("appointments")
+            .select("*")
+            .order("id", desc=True)
+            .execute()
+        )
+
+        return result.data
+
     except Exception as e:
         return {
             "success": False,
             "error": str(e),
             "traceback": traceback.format_exc(),
         }
-    finally:
-        db.close()
 
+
+# =========================
+# UPDATE STATUS
+# =========================
 
 @app.put("/appointments/{appointment_id}/status")
 @app.put("/api/appointments/{appointment_id}/status")
-def update_appointment_status(appointment_id: int, data: StatusUpdateRequest):
-    db = SessionLocal()
+def update_appointment_status(
+    appointment_id: int,
+    data: StatusUpdateRequest
+):
+
     try:
-        appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+        result = (
+            supabase
+            .table("appointments")
+            .update({
+                "status": data.status
+            })
+            .eq("id", appointment_id)
+            .execute()
+        )
 
-        if not appointment:
-            return {"success": False, "message": "Appointment not found"}
-
-        appointment.status = data.status
-        db.commit()
-        db.refresh(appointment)
+        if not result.data:
+            return {
+                "success": False,
+                "message": "Appointment not found"
+            }
 
         return {
             "success": True,
             "message": "Status updated",
-            "appointment": {
-                "id": appointment.id,
-                "patient_name": appointment.patient_name,
-                "doctor_type": appointment.doctor_type,
-                "appointment_date": appointment.appointment_date,
-                "appointment_time": appointment.appointment_time,
-                "status": appointment.status,
-            },
+            "appointment": result.data[0]
         }
 
     except Exception as e:
@@ -135,24 +165,29 @@ def update_appointment_status(appointment_id: int, data: StatusUpdateRequest):
             "traceback": traceback.format_exc(),
         }
 
-    finally:
-        db.close()
 
+# =========================
+# DELETE APPOINTMENT
+# =========================
 
 @app.delete("/appointments/{appointment_id}")
 @app.delete("/api/appointments/{appointment_id}")
 def delete_appointment(appointment_id: int):
-    db = SessionLocal()
+
     try:
-        appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+        result = (
+            supabase
+            .table("appointments")
+            .delete()
+            .eq("id", appointment_id)
+            .execute()
+        )
 
-        if not appointment:
-            return {"success": False, "message": "Appointment not found"}
-
-        db.delete(appointment)
-        db.commit()
-
-        return {"success": True, "message": "Appointment deleted successfully"}
+        return {
+            "success": True,
+            "message": "Appointment deleted successfully",
+            "deleted": result.data
+        }
 
     except Exception as e:
         return {
@@ -161,27 +196,36 @@ def delete_appointment(appointment_id: int):
             "traceback": traceback.format_exc(),
         }
 
-    finally:
-        db.close()
 
+# =========================
+# SAVE CALL LOG
+# =========================
 
 @app.post("/save-call-log")
 @app.post("/api/save-call-log")
 def save_call_log(data: CallLogRequest):
-    db = SessionLocal()
+
     try:
-        log = CallLog(
-            caller_name=data.caller_name,
-            phone_number=data.phone_number,
-            call_summary=data.call_summary,
-            transcript=data.transcript,
-            status=data.status,
+        log_data = {
+            "caller_name": data.caller_name,
+            "phone_number": data.phone_number,
+            "call_summary": data.call_summary,
+            "transcript": data.transcript,
+            "status": data.status,
+        }
+
+        result = (
+            supabase
+            .table("call_logs")
+            .insert(log_data)
+            .execute()
         )
 
-        db.add(log)
-        db.commit()
-
-        return {"success": True, "message": "Call log saved"}
+        return {
+            "success": True,
+            "message": "Call log saved",
+            "call_log": result.data[0]
+        }
 
     except Exception as e:
         return {
@@ -190,21 +234,29 @@ def save_call_log(data: CallLogRequest):
             "traceback": traceback.format_exc(),
         }
 
-    finally:
-        db.close()
 
+# =========================
+# GET CALL LOGS
+# =========================
 
 @app.get("/call-logs")
 @app.get("/api/call-logs")
 def get_call_logs():
-    db = SessionLocal()
+
     try:
-        return db.query(CallLog).order_by(CallLog.id.desc()).all()
+        result = (
+            supabase
+            .table("call_logs")
+            .select("*")
+            .order("id", desc=True)
+            .execute()
+        )
+
+        return result.data
+
     except Exception as e:
         return {
             "success": False,
             "error": str(e),
             "traceback": traceback.format_exc(),
         }
-    finally:
-        db.close()
