@@ -1,5 +1,6 @@
 import os
 import sys
+import traceback
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend")))
 
@@ -55,17 +56,31 @@ def book_appointment(data: AppointmentRequest):
             appointment_time=data.appointment_time,
             status="Confirmed",
         )
+
         db.add(appointment)
         db.commit()
         db.refresh(appointment)
-        return {"success": True, "message": "Appointment booked successfully", "appointment": {
-            "id": appointment.id,
-            "patient_name": appointment.patient_name,
-            "doctor_type": appointment.doctor_type,
-            "appointment_date": appointment.appointment_date,
-            "appointment_time": appointment.appointment_time,
-            "status": appointment.status,
-        }}
+
+        return {
+            "success": True,
+            "message": "Appointment booked successfully",
+            "appointment": {
+                "id": appointment.id,
+                "patient_name": appointment.patient_name,
+                "doctor_type": appointment.doctor_type,
+                "appointment_date": appointment.appointment_date,
+                "appointment_time": appointment.appointment_time,
+                "status": appointment.status,
+            },
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }
+
     finally:
         db.close()
 
@@ -76,6 +91,12 @@ def get_appointments():
     db = SessionLocal()
     try:
         return db.query(Appointment).order_by(Appointment.id.desc()).all()
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }
     finally:
         db.close()
 
@@ -86,19 +107,34 @@ def update_appointment_status(appointment_id: int, data: StatusUpdateRequest):
     db = SessionLocal()
     try:
         appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+
         if not appointment:
             return {"success": False, "message": "Appointment not found"}
+
         appointment.status = data.status
         db.commit()
         db.refresh(appointment)
-        return {"success": True, "message": "Status updated", "appointment": {
-            "id": appointment.id,
-            "patient_name": appointment.patient_name,
-            "doctor_type": appointment.doctor_type,
-            "appointment_date": appointment.appointment_date,
-            "appointment_time": appointment.appointment_time,
-            "status": appointment.status,
-        }}
+
+        return {
+            "success": True,
+            "message": "Status updated",
+            "appointment": {
+                "id": appointment.id,
+                "patient_name": appointment.patient_name,
+                "doctor_type": appointment.doctor_type,
+                "appointment_date": appointment.appointment_date,
+                "appointment_time": appointment.appointment_time,
+                "status": appointment.status,
+            },
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }
+
     finally:
         db.close()
 
@@ -109,11 +145,22 @@ def delete_appointment(appointment_id: int):
     db = SessionLocal()
     try:
         appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+
         if not appointment:
             return {"success": False, "message": "Appointment not found"}
+
         db.delete(appointment)
         db.commit()
+
         return {"success": True, "message": "Appointment deleted successfully"}
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }
+
     finally:
         db.close()
 
@@ -130,9 +177,19 @@ def save_call_log(data: CallLogRequest):
             transcript=data.transcript,
             status=data.status,
         )
+
         db.add(log)
         db.commit()
+
         return {"success": True, "message": "Call log saved"}
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }
+
     finally:
         db.close()
 
@@ -143,5 +200,11 @@ def get_call_logs():
     db = SessionLocal()
     try:
         return db.query(CallLog).order_by(CallLog.id.desc()).all()
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }
     finally:
         db.close()
